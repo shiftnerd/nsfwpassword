@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NSFW Passphrase Generator</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load jQuery (needed for this version of Tracery) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Load Tracery Library from GitHub via raw.githack -->
+  <script src="https://raw.githack.com/galaxykate/tracery/master/tracery.js"></script>
+</head>
+<body class="bg-blue-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+  <div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold text-center mb-4">NSFW Passphrase Generator</h1>
+    
+    <!-- Configuration Panel -->
+    <div class="bg-white dark:bg-gray-800 shadow p-4 rounded mb-4">
+      
+      <!-- Custom Word List Input -->
+      <label for="wordList" class="block font-semibold mb-2">Custom Word List:</label>
+      <textarea id="wordList" class="w-full p-2 border rounded" placeholder="Enter your custom word list (separated by spaces, commas, or newlines)..."></textarea>
+      
+      <!-- File Upload for Custom Word List -->
+      <div class="mt-4">
+         <label for="uploadWordList" class="block font-semibold mb-2">Upload Custom Word List (CSV or TXT):</label>
+         <input type="file" id="uploadWordList" class="w-full p-2 border rounded" accept=".csv, .txt">
+      </div>
+      
+      <!-- Prebuilt Word Lists -->
+      <div class="mt-4">
+        <label class="block font-semibold mb-2">Prebuilt Word Lists:</label>
+        <div class="flex items-center">
+          <input type="checkbox" id="prebuilt1" class="form-checkbox" checked>
+          <label for="prebuilt1" class="ml-2">Animals</label>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="prebuilt2" class="form-checkbox" checked>
+          <label for="prebuilt2" class="ml-2">Actions</label>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="prebuilt3" class="form-checkbox" checked>
+          <label for="prebuilt3" class="ml-2">Adjectives</label>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="prebuilt4" class="form-checkbox" checked>
+          <label for="prebuilt4" class="ml-2">Curse Words</label>
+        </div>
+      </div>
+      
+      <!-- Special Characters Exclusion -->
+      <div class="mt-4">
+         <label for="excludeSpecialChars" class="block font-semibold mb-2">Special Characters to Exclude:</label>
+         <input type="text" id="excludeSpecialChars" class="w-full p-2 border rounded" placeholder="e.g., !,@,#">
+      </div>
+      
+      <!-- Sentence Style (kept for potential future use) -->
+      <div class="mt-4">
+         <label for="sentenceStyle" class="block font-semibold mb-2">Sentence Style:</label>
+         <select id="sentenceStyle" class="w-full p-2 border rounded">
+           <option value="default">Default</option>
+         </select>
+      </div>
+      
+      <!-- Number of Passphrases -->
+      <div class="mt-4">
+         <label for="phraseCount" class="block font-semibold mb-2">Number of Passphrases:</label>
+         <input type="number" id="phraseCount" class="w-full p-2 border rounded" value="1" min="1" max="10">
+      </div>
+      
+      <button id="generateBtn" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">
+        Generate Passphrase(s)
+      </button>
+    </div>
+    
+    <!-- Output Panel -->
+    <div class="bg-white dark:bg-gray-800 shadow p-4 rounded">
+      <h2 class="text-2xl font-bold mb-2">Generated Passphrase(s):</h2>
+      <pre id="output" class="p-2 bg-gray-100 dark:bg-gray-700 rounded whitespace-pre-wrap"></pre>
+      <button id="copyBtn" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded">
+        Copy to Clipboard
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // File upload handler for custom word list.
+    document.getElementById('uploadWordList').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        // Display the uploaded text in the Custom Word List textarea.
+        document.getElementById('wordList').value = text;
+      };
+      reader.readAsText(file);
+    });
+
+    // Event listeners for generating and copying passphrases.
+    document.getElementById('generateBtn').addEventListener('click', generatePassphrases);
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const output = document.getElementById('output').textContent;
+      navigator.clipboard.writeText(output)
+        .then(() => alert('Copied to clipboard!'))
+        .catch(err => alert('Error copying text: ' + err));
+    });
+
+    function generatePassphrases() {
+  // Prebuilt lists (update these arrays with your own words as needed).
+  const prebuiltAnimals = ["fox", "dog", "cat", "lion", "tiger"];
+  const prebuiltActions = ["ran", "jumped", "flew", "crawled", "sprinted"];
+  const prebuiltAdjectives = ["quick", "lazy", "happy", "sad", "angry"];
+  const prebuiltAdverbs = ["quickly", "silently", "gracefully", "boldly", "fiercely"];
+
+  // Build the base grammarData without curse words yet.
+  var grammarData = {
+    "origin": ["#sentence#"],
+    "sentence": [
+      "On a #adjective# day, the #animal# #action# #adverb##curseEnding#.",
+      "The #animal# #action# #adverb# while the #animal# #action##curseEnding#.",
+      "Despite the #adjective# weather, the #animal# #action##curseEnding#."
+    ],
+    "animal": [],
+    "action": [],
+    "adjective": [],
+    "adverb": [],
+    "curseEnding": ["", " #curse#", " and #curse#"],
+    "curse": []
+  };
+
+  // Add prebuilt words based on checkbox selections.
+  if (document.getElementById('prebuilt1').checked) {
+    grammarData.animal = grammarData.animal.concat(prebuiltAnimals);
+  }
+  if (document.getElementById('prebuilt2').checked) {
+    grammarData.action = grammarData.action.concat(prebuiltActions);
+  }
+  if (document.getElementById('prebuilt3').checked) {
+    grammarData.adjective = grammarData.adjective.concat(prebuiltAdjectives);
+  }
+  // Always include prebuilt adverbs.
+  grammarData.adverb = grammarData.adverb.concat(prebuiltAdverbs);
+
+  // Process custom words (if any) and add them to all categories.
+  const customWordListInput = document.getElementById('wordList').value;
+  let customWords = customWordListInput.split(/[\s,]+/).filter(word => word.trim() !== '');
+  if (customWords.length > 0) {
+    grammarData.animal = grammarData.animal.concat(customWords);
+    grammarData.action = grammarData.action.concat(customWords);
+    grammarData.adjective = grammarData.adjective.concat(customWords);
+    grammarData.adverb = grammarData.adverb.concat(customWords);
+  }
+
+  // Define a fallback list in case fetching external curse words fails.
+  const fallbackCurseWords = ["damn", "hell", "crap", "bastard"];
+
+  // Fetch external curse words and proceed with grammar creation.
+  fetch('https://raw.githubusercontent.com/zacanger/profane-words/refs/heads/master/words.json')
+    .then(response => response.json())
+    .then(externalCurseWords => {
+      // Remove spaces from each fetched word.
+      externalCurseWords = externalCurseWords.map(word => word.replace(/\s+/g, ''));
+      
+      // If the "Curse Words" checkbox is checked, add the fetched curse words.
+      if (document.getElementById('prebuilt4').checked) {
+        grammarData.curse = grammarData.curse.concat(externalCurseWords);
+      }
+      
+      continueGeneration();
+    })
+    .catch(error => {
+      console.error("Error fetching external curse words:", error);
+      // On error, use the fallback curse words.
+      if (document.getElementById('prebuilt4').checked) {
+        grammarData.curse = grammarData.curse.concat(fallbackCurseWords);
+      }
+      continueGeneration();
+    });
+    
+  // Function to continue generation after curse words have been handled.
+  function continueGeneration() {
+    // Ensure each category has at least one word.
+    if (grammarData.animal.length === 0) { grammarData.animal.push("Word"); }
+    if (grammarData.action.length === 0) { grammarData.action.push("Word"); }
+    if (grammarData.adjective.length === 0) { grammarData.adjective.push("Word"); }
+    if (grammarData.adverb.length === 0) { grammarData.adverb.push("Word"); }
+    if (grammarData.curse.length === 0) { grammarData.curse.push(""); }
+    
+    // Create the grammar using Tracery.
+    var grammar = tracery.createGrammar(grammarData);
+    
+    // Generate passphrases.
+    const phraseCount = parseInt(document.getElementById('phraseCount').value);
+    let passphrases = [];
+    for (let i = 0; i < phraseCount; i++) {
+      let sentence = grammar.flatten("#origin#");
+      // Remove spaces to yield a concatenated passphrase.
+      let passphrase = sentence.replace(/\s+/g, '');
+      passphrases.push(passphrase);
+    }
+    
+    document.getElementById('output').textContent = passphrases.join('\n');
+  }
+}
+  </script>
+</body>
+</html>
