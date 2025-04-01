@@ -11,11 +11,6 @@ A single-page static web application that generates secure, memorable, and NSFW 
 
 - [Features](#features)
 - [Usage](#usage)
-- [Technical Details](#technical-details)
-- [Customization](#customization)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
 
 ---
 
