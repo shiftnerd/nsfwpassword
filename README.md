@@ -40,7 +40,7 @@ A single-page static web application that generates secure, memorable, and NSFW 
 - **One-Click Clipboard Copy:**  
   Easily copy your generated passphrase(s) with a single button click.
 
-- ++Usage++
+- **Usage:**  
 1.	Custom Word List:
 	•	Type or paste your custom word list into the provided textarea.
 	•	Alternatively, upload a CSV or TXT file to auto-populate the list.
